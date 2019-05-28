@@ -1,2 +1,0 @@
-/usr/bin/ar qc libcontact.a  CMakeFiles/contact.dir/contact.cpp.o
-/usr/bin/ranlib libcontact.a

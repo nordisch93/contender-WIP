@@ -4,8 +4,10 @@
 #include<stdexcept>
 #include<sstream>
 #include"contact.hpp"
+//#include"sqlite3.h"
 
 using namespace std;
+//using namespace Contact;
 
 class Contender{
 
@@ -18,6 +20,7 @@ public:
         
         fileIsOpen = true;  
         fileHasChanged = false;
+        return 0;
     };
     
     int closeFile() {
@@ -40,11 +43,13 @@ public:
             // close FILE
             fileIsOpen = false;
         }
+        return 0;
     };
     
     int saveFile(char* filename) {
         
         fileHasChanged = false;
+        return 0;
     };
     
     
@@ -61,6 +66,7 @@ public:
 //             
 //             
 //         }
+        return 0;
     };
 };
 
@@ -202,7 +208,8 @@ public:
          case OPEN:
              return cnt.mainloop(filename);
              break;
-        }        
+        } 
+        return 0;
     }
     static void printHelp() {
         cout <<  "This is very helpful text!\n";        
