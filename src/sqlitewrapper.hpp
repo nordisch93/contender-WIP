@@ -47,11 +47,22 @@ public:
     int createDb(const char* filename);
     
     /**
+     * Attempts to close the db currently opened within the wrapper by finalizing all prepared statements then closing the Db itself.
+     * 
+     * return:          SQLITE_OK if successful
+     *                  extended errorcode else
+     * 
+     */
+    int closeDb();
+    
+    
+    /**
      * Creates a table for contacts in the database.
      * 
      * return:          SQLITE_OK if successful
      *                  extended errorcode else
      */
+    
     int createContactTable();
     
     /**
@@ -84,5 +95,21 @@ public:
      *                  errorcode else
      */
     int editContact(Contact contact, int contactId);
+    
+    /**
+     * Defragments the database by copying the db to a temporary db ignoring all free spaces and copying it back to the original db overwriting it. 
+     * 
+     * Should be called perdiodically and after drastic changes to the db structure.
+     * Only successful if there are no open transactions.
+     * 
+     * return:          
+     * 
+     */
+    int vacuumDb();
+    
+    
+    
+    
+    
 
 };

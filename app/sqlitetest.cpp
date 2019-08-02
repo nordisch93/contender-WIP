@@ -51,7 +51,7 @@ int main(int argc, char* argv[]){
         
         //close database
         if(dbIsOpen){
-            if(sqlite3_close(database) == SQLITE_OK)
+            if(sqlw.closeDb() == SQLITE_OK)
                 std::cout << "Successfully closed database.\n";
             else
                 std::cout << "Error closing database.\n";
