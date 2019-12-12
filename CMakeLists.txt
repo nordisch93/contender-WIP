@@ -7,12 +7,12 @@ project (contender)
  # "${PROJECT_SOURCE_DIR}/TutorialConfig.h.in"
   #"${PROJECT_BINARY_DIR}/TutorialConfig.h"
   #)
- 
+
 # add the binary tree to the search path for include files
 # so that we will find TutorialConfig.h
 
 #include_directories("${PROJECT_BINARY_DIR}")
- 
+
 add_subdirectory(src)
 
 #add custom libraries to project
@@ -28,8 +28,6 @@ link_directories(/usr/local/lib)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads)
 
-#link sqlite to sqlitewrapper
-#target_link_libraries(sqlitewrapper sqlite3)
 
 # add the executables
 add_executable(contender ${PROJECT_SOURCE_DIR}/app/contender.cpp)

@@ -11,26 +11,26 @@ using namespace std;
 
 class Contender{
 
-private: 
+private:
     bool fileIsOpen = false;
     bool fileHasChanged = false;
 
 public:
     int openFile(char* Filename) {
-        
-        fileIsOpen = true;  
+
+        fileIsOpen = true;
         fileHasChanged = false;
         return 0;
     };
-    
+
     int closeFile() {
         if (fileHasChanged)
         {
             cout <<  "There are unsaved changes. Exit anyways? Y/N\n";
-            while (true) 
+            while (true)
             {
                 char input = getchar();
-                if (input == 'Y') 
+                if (input == 'Y')
                 {
                     // close FILE
                     fileIsOpen = false;
@@ -45,22 +45,18 @@ public:
         }
         return 0;
     };
-    
     int saveFile(char* filename) {
-        
         fileHasChanged = false;
         return 0;
     };
-    
-    
-    
+
     int mainloop(char* filename){
         cout << "mainloop\n";
-        string name = "CUNT";
-        string firstName = "cunt";
+        string name = "Ander";
+        string firstName = "Alex";
         
-        Contact cunt = Contact(name, firstName);
-        cout << cunt.printContact();
+        Contact contact = Contact(name, firstName);
+        cout << contact.printContact();
 //         while(true){
 //             
 //             
@@ -81,7 +77,7 @@ public:
         int HandleError(std::invalid_argument e) {
          cout <<  "Bad argument. For help type \"-h\"\n";   
          return 1;
-        }    
+        }
         int HandleError(std::system_error e){
             cout << "An error occurered with errorcode " <<e.code() << " meaning " <<e.what();
             return 1;
@@ -145,30 +141,29 @@ public:
              break;             
         }
     }
-    
 };
 
 class StartupHandler {
 private:
         SCMD cmd;
         char* filename;
-    
+
 public:
-    
+
     StartupHandler(int argc,  char* argv[]) {
       if (argc < 2) {
           throw std::invalid_argument("Not enough arguments!");
       }
-      if (!strcmp(argv[1], "-h") || !strcmp(argv[1], "-help"))
+      if (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help"))
           cmd = S_HELP;
-      else if (!strcmp(argv[1], "-n") || !strcmp(argv[1], "-new")) {
+      else if (!strcmp(argv[1], "-n") || !strcmp(argv[1], "--new")) {
           cmd = S_NEW;
           if (argc < 3) {
             throw std::invalid_argument("Not enough arguments!");
           }
           filename = argv[2];
       }
-      else if (!strcmp(argv[1], "-o") || !strcmp(argv[1], "-open")) {
+      else if (!strcmp(argv[1], "-o") || !strcmp(argv[1], "--open")) {
           cmd = S_OPEN;
           if (argc < 3) {
             throw std::invalid_argument("Not enough arguments!");
@@ -180,7 +175,7 @@ public:
           throw std::invalid_argument("Invalid command");
       }
     };
-    
+
     int execute() {
         Contender cnt;
         switch (cmd) {
@@ -193,9 +188,9 @@ public:
                  // create file
                  if (!cnt.openFile(filename)) {
                      throw std::system_error();
-                 }                 
+                 }
              }
-             catch (const std::system_error& ex){
+             catch (std::system_error& ex){
                  ExceptionHandler handler;
                  return handler.HandleError();
              }
@@ -208,19 +203,18 @@ public:
          case OPEN:
              return cnt.mainloop(filename);
              break;
-        } 
+        }
         return 0;
     }
     static void printHelp() {
-        cout <<  "This is very helpful text!\n";        
+        cout <<  "This is very helpful text!\n";
     }
-    
 };
 
 int main(int argc, char* argv[]){
     try {
         StartupHandler cmd(argc, argv);
-        return cmd.execute();        
+        return cmd.execute();
     }
     catch (const std::invalid_argument& e) {
         ExceptionHandler handler;
@@ -234,7 +228,5 @@ int main(int argc, char* argv[]){
                  ExceptionHandler handler;
                  return handler.HandleError();
     }
-    
     return 0;
 }
-

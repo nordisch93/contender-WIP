@@ -33,11 +33,14 @@ int main(int argc, char* argv[]){
         
         Contact c = Contact("peter", "silie");
         
-        int temp = sqlw.createContactTable();
+        std::string tableName = "contacts";
+        std::string arguments = "contact_id INTEGER PRIMARY KEY, first_name TEXT NOT NULL, last_name TEXT, email text, phone text";
+        
+        int temp = sqlw.createTable(tableName, arguments);
         
         if(temp == SQLITE_OK){
         
-            temp = sqlw.addContact(c);
+            temp = sqlw.addDatabaseEntry(&c);
             if(temp == SQLITE_OK){
                 //evereything fine
             }
