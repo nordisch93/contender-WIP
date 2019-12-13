@@ -178,14 +178,17 @@ int Sqlitewrapper::createTable(std::string name, std::string arguments){
 }
 
 /**
+    * Adds a new Entry for a given Database Object into its given table by taking the Object's
+    * insert statement, binding its values to it and processing the statement.
     * 
+    * var   databaseObject: the object for which the entry in the database is added
     *
-    * return:          SQLITE_OK if successful
-    *                  errorcode else
-    */
+    * return:               SQLITE_OK if successful
+    *                       errorcode else
+*/
 
 
-int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObject, std::string tableName){
+int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObject){
 
     std::string statementString = std::string(databaseObject->insertStatement());
     const char* statementPointer = statementString.c_str();
@@ -194,7 +197,6 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObjec
     if(generic_insert_stmt_ != NULL)
         insertStmt = generic_insert_stmt_;
     else{
-        sqlite3_stmt* ppStmt;
         const char* pzTail;
         const char *insertStmntText = statementPointer;
         int prepareReturnValue = sqlite3_prepare_v2(
@@ -290,18 +292,15 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObjec
     * return:          SQLITE_OK if successful
     *                  errorcode else
     */
-/* int Sqlitewrapper::deleteContact(int contactId){
-
-    const char* tableName = "contacts";
-    const char* attribute = "contact_id";
-
+int Sqlitewrapper::deleteDatabaseEntry(std::string attributeName, DatabaseField field){
+    
+    const char* deleteStmntText = "DELETE FROM contacts WHERE @attributeName = @id";
     sqlite3_stmt* deleteStmt;
+    
     if(generic_delete_stmt_ != NULL)
         deleteStmt = generic_delete_stmt_;
     else{
-        sqlite3_stmt* ppStmt;
-        const char* pzTail;
-        const char* deleteStmntText = "DELETE FROM @table WHERE @attribute = @value";
+        const char* pzTail;        
         int prepareReturnValue = sqlite3_prepare_v2(
             *database_,
             deleteStmntText,
@@ -309,12 +308,20 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObjec
             &deleteStmt,
             &pzTail
         );
+        std::cout << prepareReturnValue << "\n";
     }
 
-    int bindReturnValue = sqlite3_bind_text(deleteStmt, 1, tableName,-1,SQLITE_STATIC);
-    bindReturnValue = sqlite3_bind_text(deleteStmt, 2, attribute,-1,SQLITE_STATIC);
-    bindReturnValue = sqlite3_bind_int(deleteStmt, 3, contactId);
-
+    const char* attribute = attributeName.c_str();
+    int bindReturnValue = sqlite3_bind_text(deleteStmt, 1, attribute,-1,SQLITE_STATIC);
+    
+    switch(field.type){
+        case ColumnType::INT:
+            bindReturnValue = sqlite3_bind_int(deleteStmt, 2, std::stoi(field.value)); 
+            break;
+        default:
+            bindReturnValue = sqlite3_bind_text(deleteStmt, 2, field.value.c_str(), -1, SQLITE_STATIC); 
+    }
+    
     if(bindReturnValue == SQLITE_OK){
         std::cout << "Successfully prepared delete statement.\n";
 
@@ -352,11 +359,11 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObjec
         }
     }
     else{
-            std::cout << "Statement to insert could not be prepared.\n Error code " << sqlite3_extended_errcode(*database_) << ".\n";
+            std::cout << "Statement to delete could not be prepared.\n Error code " << sqlite3_extended_errcode(*database_) << ".\n";
             return sqlite3_extended_errcode(*database_);
     }
 }
- */
+
 /**
     * Edits a contact from the database with updated data by calculating the difference of the entries and updating oudated data. 
     *

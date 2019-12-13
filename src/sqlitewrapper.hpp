@@ -37,12 +37,13 @@ public:
     /**
      * This Interface defines the methods that any Class has to implement in order to store them in
      * the database via this sqlitewrapper.
+     * A DatabaseObject needs predefined statements for Inserting, etc. as well as a list of
+     * DatabaseFields containing the type and values (as strings) of the field.
      */
     class DatabaseObject{
     public:
         virtual ~DatabaseObject(){}
         virtual std::string insertStatement() = 0;
-        //virtual uint32_t getArgumentCount() = 0;
         virtual std::list<DatabaseField> getDatabaseFields() = 0;
     };
 
@@ -111,17 +112,18 @@ public:
      * return:          SQLITE_OK if successful
      *                  errorcode else
      */
-    int addDatabaseEntry(DatabaseObject* databaseObject, std::string tableName);
+    int addDatabaseEntry(DatabaseObject* databaseObject);
 
     /**
      * Deletes a contact from the database by using a DELETE statement on the contact table.
      *
-     * var contact_Id:  the ID of the contact to be deleted
+     * var entryId:     the ID of the contact to be deleted
+     * var tableName:   the name of the table the entry is to be deelted from
      *
      * return:          SQLITE_OK if successful
      *                  errorcode else
      */
-    //int deleteContact(int contactId);
+    int deleteDatabaseEntry(std::string attributeName, DatabaseField field);
 
     /**
      * Edits a contact from the database with updated data by calculating the difference of the entries and updating oudated data.

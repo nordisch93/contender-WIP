@@ -77,7 +77,7 @@ Contact::Contact(){
     lastName_ ="";
     firstName_="";
 }
-Contact::Contact(std::string lastName, std::string firstName){
+Contact::Contact(std::string firstName, std::string lastName){
     lastName_ = lastName;
     firstName_ = firstName;
 }

@@ -6,7 +6,7 @@
 #include"sqlite3.h"
 
 #include"contact.hpp"
-//#include"sqlitewrapper.hpp"
+#include"sqlitewrapper.hpp"
 
 int main(int argc, char* argv[]){
     
@@ -31,27 +31,40 @@ int main(int argc, char* argv[]){
 
         std::cout << "Successfully opened database.\n";
         
-        Contact c = Contact("peter", "silie");
-        
+        auto list = std::list<Contact>();
+
+        list.push_back(Contact("peter", "silie"));
+        list.push_back(Contact("Mike", "Hunt"));
+        list.push_back(Contact("Ben", "Dover"));
+        list.push_back(Contact("Mike", "Hunt"));
+        list.push_back(Contact("Moe", "Lester"));
+        list.push_back(Contact("Axel", "Schweiß"));
+
         std::string tableName = "contacts";
         std::string arguments = "contact_id INTEGER PRIMARY KEY, first_name TEXT NOT NULL, last_name TEXT, email TEXT, phone TEXT";
         
         int temp = sqlw.createTable(tableName, arguments);
         
         if(temp == SQLITE_OK){
-        
-            temp = sqlw.addDatabaseEntry(&c, "contacts");
-            if(temp == SQLITE_OK){
-                //evereything fine
-            }
-            else{
-                //couldnt add contact
+            
+            for(Contact c : list){
+                temp = sqlw.addDatabaseEntry(&c);
+                if(temp == SQLITE_OK){
+                    //everything fine
+                    std::cout << "Added " << c.getFirstName() << " " << c.getLastName() << " to the database.\n";
+                }
+                else{
+                    //couldnt add contact
+                }
             }
         }
         else{
             //couldnt create table
         }
         
+        //delete an entry
+        sqlw.deleteDatabaseEntry("contact_id", {Sqlitewrapper::ColumnType::INT, std::string("3")});
+
         //close database
         if(dbIsOpen){
             if(sqlw.closeDb() == SQLITE_OK)
