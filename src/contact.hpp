@@ -49,15 +49,18 @@ private:
     std::string email_;
     Date birthday_;
 public:
-    //~Contact(){};
     Contact();
     Contact(std::string, std::string);
     std::string printContact();
 
     virtual std::string insertStatement();
-    virtual uint32_t getArgumentCount() {return 5;}
-    virtual std::string getArgumentString(){
-        return (std::string("IGNORE") + "%" + firstName_ + "%" + lastName_ + "%" + email_ + "%" + phone_);
+    virtual std::list<Sqlitewrapper::DatabaseField> getDatabaseFields(){
+        auto list = std::list<Sqlitewrapper::DatabaseField>();
+        list.push_back({Sqlitewrapper::ColumnType::TEXT, firstName_});
+        list.push_back({Sqlitewrapper::ColumnType::TEXT, lastName_});
+        list.push_back({Sqlitewrapper::ColumnType::TEXT, email_});
+        list.push_back({Sqlitewrapper::ColumnType::TEXT, phone_});
+        return list;
     }
 
     inline std::string getFirstName(){  return firstName_;}

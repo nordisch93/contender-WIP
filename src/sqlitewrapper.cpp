@@ -178,9 +178,7 @@ int Sqlitewrapper::createTable(std::string name, std::string arguments){
 }
 
 /**
-    * Adds a contact to the database by using an INSERT INTO statement on the contact table. If a generic insert statement already exists it is rebound and used, otherwise a new insert statement is prepared.
-    *
-    * var contact:     the contact to be added
+    * 
     *
     * return:          SQLITE_OK if successful
     *                  errorcode else
@@ -188,7 +186,9 @@ int Sqlitewrapper::createTable(std::string name, std::string arguments){
 
 
 int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObject, std::string tableName){
-    int contact_id = 0;     //the id should be max(contact_id)+1 to make sure it's unique
+
+    std::string statementString = std::string(databaseObject->insertStatement());
+    const char* statementPointer = statementString.c_str();
 
     sqlite3_stmt* insertStmt;
     if(generic_insert_stmt_ != NULL)
@@ -196,7 +196,7 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObjec
     else{
         sqlite3_stmt* ppStmt;
         const char* pzTail;
-        const char *insertStmntText = "INSERT INTO contacts ( contact_id, first_name, last_name, email, phone) VALUES (@contact_id, @first_name, @last_name, @email, @phone);";
+        const char *insertStmntText = statementPointer;
         int prepareReturnValue = sqlite3_prepare_v2(
             *database_,
             insertStmntText,
@@ -204,34 +204,47 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObjec
             &insertStmt,
             &pzTail
         );
+        if(prepareReturnValue == SQLITE_OK)
+            std::cout << "Successfully prepared Insert Statement\n";
+        else
+            std::cout << "Error preparing Insert Statement\n";            
     }
 
-    std::string arguments = databaseObject->getArgumentString();
-    //get single arguments from argument string and bind them to the insert statement
-    //arguments are seperated by a %-sign
+    /*
+    * iterate through all dataBaseFields provided by the DatabaseObject and bind their values to the 
+    * insertStatement. The first argument has index 1 (!!) and should not be touched if it is a 
+    * unique id, since it will be set to max_id+1 automatically by the database if left unbound.
+    */
 
     int bindReturnValue = SQLITE_OK;
-    uint32_t position1 = 0;
-    uint32_t position2 = arguments.find("%");
 
-    for(uint32_t i = 1; i <= databaseObject->getArgumentCount(); i++){
-        std::string argument = arguments.substr(position1, position2 -position1);
-        const char* arg_c = argument.c_str();
-        //argument is ignored if its Value is IGNORE
-        //TODO handle cases where a type other than TEXT is bound
-        if(argument.compare(std::string("IGNORE"))){
-            bindReturnValue = sqlite3_bind_text(insertStmt, i, arg_c,-1,SQLITE_STATIC);
+    auto list = databaseObject->getDatabaseFields();
+    uint32_t argumentCount = 2;
+    for(DatabaseField field : list){
+        switch(field.type){
+            //TODO: implement other cases
+            case ColumnType::INT:
+
+            break;
+            case ColumnType::FLOAT:
+
+            break;
+            case ColumnType::TEXT:
+                bindReturnValue = sqlite3_bind_text(insertStmt, argumentCount, field.value.c_str(),-1,SQLITE_STATIC);
+            break;
+            case ColumnType::BLOB:
+
+            break;
+            default:
+            std::cout << "Undefined ColumnType while trying to add new entry. Field value: " << field.value << "\n";
+            break;
         }
-        //std::cout << arg_c << i << " Status: " << bindReturnValue << "\n";
-
-        position1 = position2 + 1;
-        position2 = arguments.find("%", position2 + 1);
+        argumentCount++; 
+        //std::cout << field.value << argumentCount-1 << " Status: " << bindReturnValue << "\n";
     }
 
-    //by not binding anything to contact_id sqlite autmatically uses max(contact_id)+1
-
     if(bindReturnValue == SQLITE_OK){
-        std::cout << "Successfully prepared insert statement.\n";
+        std::cout << "Successfully bound values to insert statement.\n";
         //execute & finalize statement
         if(sqlite3_step(insertStmt) == SQLITE_DONE){
             std::cout << "Successfully processed insert statement.\n";
@@ -264,7 +277,7 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObjec
         }
     }
     else{
-            std::cout << "Statement to insert could not be prepared.\n Error code " << sqlite3_extended_errcode(*database_) << ".\n";
+            std::cout << "Error binding values to Insert statement.\n Error code " << sqlite3_extended_errcode(*database_) << ".\n";
             return sqlite3_extended_errcode(*database_);
     }
 }

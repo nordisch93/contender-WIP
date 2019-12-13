@@ -34,7 +34,7 @@ int main(int argc, char* argv[]){
         Contact c = Contact("peter", "silie");
         
         std::string tableName = "contacts";
-        std::string arguments = "contact_id INTEGER PRIMARY KEY, first_name TEXT NOT NULL, last_name TEXT, email text, phone text";
+        std::string arguments = "contact_id INTEGER PRIMARY KEY, first_name TEXT NOT NULL, last_name TEXT, email TEXT, phone TEXT";
         
         int temp = sqlw.createTable(tableName, arguments);
         

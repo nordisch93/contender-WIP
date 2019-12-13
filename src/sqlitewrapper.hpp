@@ -20,7 +20,20 @@ private:
     sqlite3_stmt* generic_select_stmt_ = NULL;
 
 public:
-
+    /**
+     * This enum lists the four possible datatypes a column in a database can have.
+     */
+    enum ColumnType{INT = SQLITE_INTEGER, FLOAT = SQLITE_FLOAT,
+                    TEXT = SQLITE3_TEXT, BLOB = SQLITE_BLOB};
+    
+    /**
+     * This struct holds the type and the value of a specific field belonging to a DatabaseObject.
+     * The value is always stored as a string in this struct, even though the type my not be TEXT.
+     */
+    struct DatabaseField{
+        ColumnType type;
+        std::string value;
+    };
     /**
      * This Interface defines the methods that any Class has to implement in order to store them in
      * the database via this sqlitewrapper.
@@ -29,8 +42,8 @@ public:
     public:
         virtual ~DatabaseObject(){}
         virtual std::string insertStatement() = 0;
-        virtual uint32_t getArgumentCount() = 0;
-        virtual std::string getArgumentString() = 0;
+        //virtual uint32_t getArgumentCount() = 0;
+        virtual std::list<DatabaseField> getDatabaseFields() = 0;
     };
 
     /**
