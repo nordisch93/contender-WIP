@@ -185,82 +185,9 @@ int Sqlitewrapper::createTable(std::string name, std::string arguments){
     * return:          SQLITE_OK if successful
     *                  errorcode else
     */
-int Sqlitewrapper::addContact(Contact contact){
-    int contact_id = 0;     //the id should be max(contact_id)+1 to make sure it's unique
-    const char* firstName = contact.getFirstName().c_str();
-    const char* lastName = contact.getLastName().c_str();
-    const char* email = contact.getEmail().c_str();
-    const char* phone = contact.getPhone().c_str();
-
-    sqlite3_stmt* insertStmt;
-    if(generic_insert_stmt_ != NULL)
-        insertStmt = generic_insert_stmt_;
-    else{
-        sqlite3_stmt* ppStmt;
-        const char* pzTail;
-        const char *insertStmntText = "INSERT INTO contacts ( contact_id, first_name, last_name, email, phone) VALUES (@contact_id, @first_name, @last_name, @email, @phone);";
-        int prepareReturnValue = sqlite3_prepare_v2(
-            *database_,
-            insertStmntText,
-            -1,
-            &insertStmt,
-            &pzTail
-        );
-    }
-
-    //by not binding anything to contact_id sqlite autmatically uses max(contact_id)+1
-    //bindReturnValue = sqlite3_bind_int(insertStmt, 1, NULL);
-
-    //bind first_name, last_name, email, phone
-    int bindReturnValue = sqlite3_bind_text(insertStmt, 2, firstName,-1,SQLITE_STATIC);
-    bindReturnValue += sqlite3_bind_text(insertStmt, 3, lastName,-1,SQLITE_STATIC);
-    bindReturnValue += sqlite3_bind_text(insertStmt, 4, email,-1,SQLITE_STATIC);
-    bindReturnValue += sqlite3_bind_text(insertStmt, 5, phone,-1,SQLITE_STATIC);
-    
-    if(bindReturnValue == SQLITE_OK){
-        std::cout << "Successfully prepared insert statement.\n";
-        
-        //execute & finalize statement
-        if(sqlite3_step(insertStmt) == SQLITE_DONE){
-            std::cout << "Successfully processed insert statement.\n";
-            
-            //finalize statement if wrapper is in a mode that conserves memory
-            if(isSlim_){
-                if(sqlite3_finalize(insertStmt) == SQLITE_OK){
-                    std::cout << "Successfully finalized insert statement.\n";
-                    return SQLITE_OK;
-                }
-                else{
-                    std::cout << "Statement could not be finalized.\n Error code " << sqlite3_extended_errcode(*database_) << ".\n";
-                    return sqlite3_extended_errcode(*database_);
-                }
-            }
-            //reset the statement, but don't finalize
-            else{
-                if(sqlite3_reset(insertStmt) == SQLITE_OK){
-                    std::cout << "Successfully reset insert statement.\n";
-                    return SQLITE_OK;
-                }
-                else{
-                    std::cout << "Statement could not be reset.\n Error code " << sqlite3_extended_errcode(*database_) << ".\n";
-                    return sqlite3_extended_errcode(*database_);
-                }
-                
-            }
-        }
-        else{
-            std::cout << "Statement to insert could not be processed.\n Error code " << sqlite3_extended_errcode(*database_) << ".\n";
-            return sqlite3_extended_errcode(*database_);
-        }
-    }
-    else{
-            std::cout << "Statement to insert could not be prepared.\n Error code " << sqlite3_extended_errcode(*database_) << ".\n";
-            return sqlite3_extended_errcode(*database_);
-    }
-}
 
 
-int Sqlitewrapper::addDatabaseEntry(DatabaseObject* contact){
+int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObject, std::string tableName){
     int contact_id = 0;     //the id should be max(contact_id)+1 to make sure it's unique
 
     sqlite3_stmt* insertStmt;
@@ -279,7 +206,7 @@ int Sqlitewrapper::addDatabaseEntry(DatabaseObject* contact){
         );
     }
 
-    std::string arguments = contact->getArgumentString();
+    std::string arguments = databaseObject->getArgumentString();
     //get single arguments from argument string and bind them to the insert statement
     //arguments are seperated by a %-sign
 
@@ -287,7 +214,7 @@ int Sqlitewrapper::addDatabaseEntry(DatabaseObject* contact){
     uint32_t position1 = 0;
     uint32_t position2 = arguments.find("%");
 
-    for(uint32_t i = 1; i <= contact->getArgumentCount(); i++){
+    for(uint32_t i = 1; i <= databaseObject->getArgumentCount(); i++){
         std::string argument = arguments.substr(position1, position2 -position1);
         const char* arg_c = argument.c_str();
         //argument is ignored if its Value is IGNORE
@@ -350,7 +277,7 @@ int Sqlitewrapper::addDatabaseEntry(DatabaseObject* contact){
     * return:          SQLITE_OK if successful
     *                  errorcode else
     */
-int Sqlitewrapper::deleteContact(int contactId){
+/* int Sqlitewrapper::deleteContact(int contactId){
 
     const char* tableName = "contacts";
     const char* attribute = "contact_id";
@@ -416,7 +343,7 @@ int Sqlitewrapper::deleteContact(int contactId){
             return sqlite3_extended_errcode(*database_);
     }
 }
-
+ */
 /**
     * Edits a contact from the database with updated data by calculating the difference of the entries and updating oudated data. 
     *
@@ -426,8 +353,8 @@ int Sqlitewrapper::deleteContact(int contactId){
     * return:          SQLITE_OK if successful
     *                  errorcode else
     */
-int Sqlitewrapper::editContact(Contact contact, int contactId){
+/* int Sqlitewrapper::editContact(Contact contact, int contactId){
     return 0;
-}
+} */
 
 

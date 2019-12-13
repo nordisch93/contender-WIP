@@ -6,7 +6,7 @@
 #include"sqlite3.h"
 
 #include"contact.hpp"
-#include"sqlitewrapper.hpp"
+//#include"sqlitewrapper.hpp"
 
 int main(int argc, char* argv[]){
     
@@ -40,7 +40,7 @@ int main(int argc, char* argv[]){
         
         if(temp == SQLITE_OK){
         
-            temp = sqlw.addDatabaseEntry(&c);
+            temp = sqlw.addDatabaseEntry(&c, "contacts");
             if(temp == SQLITE_OK){
                 //evereything fine
             }

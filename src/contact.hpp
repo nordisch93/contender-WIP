@@ -1,15 +1,8 @@
 #include<string>
+#include"sqlitewrapper.hpp"
 
 #ifndef CONTACT_HPP
 #define CONTACT_HPP
-
-class DatabaseObject{
-public:
-    virtual ~DatabaseObject(){}
-    virtual std::string insertStatement() = 0;
-    virtual uint32_t getArgumentCount() = 0;
-    virtual std::string getArgumentString() = 0;
-};
 
 class Date{
     private:
@@ -48,7 +41,7 @@ class Date{
     };
     
     
-class Contact : public DatabaseObject{
+class Contact : public Sqlitewrapper::DatabaseObject{
 private:
     std::string lastName_;
     std::string firstName_;

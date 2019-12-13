@@ -1,12 +1,17 @@
+#ifndef SQLITEWRAPPER_HPP
+#define SQLITEWRAPPER_HPP
+
 #include<iostream>
 #include<string>
 #include<cstring>
+#include<list>
 #include"sqlite3.h"
-#include"contact.hpp"
+
 
 class Sqlitewrapper{
 
 private:
+
     sqlite3** database_;
     bool isSlim_;
 
@@ -15,6 +20,18 @@ private:
     sqlite3_stmt* generic_select_stmt_ = NULL;
 
 public:
+
+    /**
+     * This Interface defines the methods that any Class has to implement in order to store them in
+     * the database via this sqlitewrapper.
+     */
+    class DatabaseObject{
+    public:
+        virtual ~DatabaseObject(){}
+        virtual std::string insertStatement() = 0;
+        virtual uint32_t getArgumentCount() = 0;
+        virtual std::string getArgumentString() = 0;
+    };
 
     /**
      * Creates a new instance of the sqlitewrapper class.
@@ -37,7 +54,7 @@ public:
     int openDb(const char* filename);
 
     /**
-     * Tries to create a sqlite3 database witht he given filename .
+     * Tries to create a sqlite3 database with the given filename .
      *
      * var filename:    the filename of the new db
      *
@@ -73,16 +90,15 @@ public:
 
 
     /**
-     * Adds a contact to the database by using an INSERT INTO statement on the contact table.
+     * Adds a DatabaseObject to the database by using an INSERT INTO statement on the specified table.
      *
-     * var contact:     the contact to be added
+     * var databaseObject:  the object to be added
+     * var tableName:       the name of the table where the object is to be added
      *
      * return:          SQLITE_OK if successful
      *                  errorcode else
      */
-    int addContact(Contact contact);
-
-    int addDatabaseEntry(DatabaseObject* contact);
+    int addDatabaseEntry(DatabaseObject* databaseObject, std::string tableName);
 
     /**
      * Deletes a contact from the database by using a DELETE statement on the contact table.
@@ -92,7 +108,7 @@ public:
      * return:          SQLITE_OK if successful
      *                  errorcode else
      */
-    int deleteContact(int contactId);
+    //int deleteContact(int contactId);
 
     /**
      * Edits a contact from the database with updated data by calculating the difference of the entries and updating oudated data.
@@ -103,7 +119,7 @@ public:
      * return:          SQLITE_OK if successful
      *                  errorcode else
      */
-    int editContact(Contact contact, int contactId);
+    //int editContact(Contact contact, int contactId);
 
     /**
      * Defragments the database by copying the db to a temporary db ignoring all free spaces and copying it back to the original db overwriting it.
@@ -117,3 +133,4 @@ public:
     int vacuumDb();
 
 };
+#endif
