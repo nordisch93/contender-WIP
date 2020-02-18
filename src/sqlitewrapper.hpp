@@ -7,6 +7,7 @@
 #include<list>
 #include"sqlite3.h"
 #include"json.h"
+//#include<json/json.h>
 
 class Sqlitewrapper{
 
@@ -51,9 +52,9 @@ public:
      */
     class DatabaseObject{
     public:
-        virtual ~DatabaseObject(){}
-        virtual std::string insertStatement() = 0;
-        virtual std::string deleteStatement() = 0;
+        virtual ~DatabaseObject(){};
+        virtual std::string getInsertStatement() = 0;
+        virtual std::string getDeleteStatement() = 0;
         virtual Json::Value getData() = 0;
         //virtual std::list<std::list<std::string>> getData() = 0;
         virtual std::list<ColumnAttributes> getLayout() = 0;

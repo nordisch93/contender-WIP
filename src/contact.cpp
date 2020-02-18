@@ -4,6 +4,7 @@
 // #define NDEBUG
 #include<cassert>
 #include"contact.hpp"
+//#include"json.h"
 
 //using namespace Contact;
 
@@ -73,7 +74,10 @@ void Date::setDate(uint32_t day, uint32_t month, uint32_t year){
     }
 };
 
-Contact::Contact(){}
+Contact::Contact(){};
+Contact::Contact(Json::Value data){
+ data_ = data;
+};
 Contact::Contact(std::list<std::string> firstNames, std::list<std::string> lastNames){
         auto appendNames = [](std::list<std::string> listOfAllNames){
             std::string stringOfAllNames = "(";
@@ -85,15 +89,11 @@ Contact::Contact(std::list<std::string> firstNames, std::list<std::string> lastN
         };
         data_["firstNames"] = appendNames(firstNames);
         data_["lastNames"] = appendNames(lastNames);
-        
-        /*data_ = std::list<std::list<std::string>>();
-        data_.push_back(firstNames);
-        data_.push_back(lastNames);*/
 };
 
-std::string Contact::insertStatement(){
+std::string Contact::getInsertStatement(){
     return "INSERT INTO contacts (contact_id, first_name, last_name, email, phone) VALUES (@contact_id, @first_name, @last_name, @email, @phone);";
 }
-std::string Contact::deleteStatement(){
+std::string Contact::getDeleteStatement(){
     return "DELETE FROM contacts WHERE contact_id = @contact_id;";
 }

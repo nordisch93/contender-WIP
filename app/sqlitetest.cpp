@@ -33,11 +33,12 @@ int main(int argc, char* argv[]){
         
         auto list = std::list<Contact>();
 
-        list.push_back(Contact({std::string("peter")}, {std::string("silie")}));
+        list.push_back(Contact({std::string("peter"), std::string("alfred"), std::string("m.")}, {std::string("silie")}));
         list.push_back(Contact({std::string("Mike")}, {std::string("Hunt")}));
         list.push_back(Contact({std::string("Mike")}, {std::string("Litoris")}));
         list.push_back(Contact({std::string("Ben")}, {std::string("Dover")}));
         list.push_back(Contact({std::string("Moe")}, {std::string("Lester")}));
+
 
         std::string tableName = "contacts";
         std::string arguments = "contact_id INTEGER PRIMARY KEY, first_name TEXT NOT NULL, last_name TEXT, email TEXT, phone TEXT";
@@ -45,12 +46,11 @@ int main(int argc, char* argv[]){
         int temp = sqlw.createTable(tableName, arguments);
         
         if(temp == SQLITE_OK){
-            
             for(Contact c : list){
                 temp = sqlw.addDatabaseEntry(&c);
                 if(temp == SQLITE_OK){
                     //everything fine
-                    std::cout << "Added " << c.getData()["FirstNames"] << " to the database.\n";
+                    std::cout << "Added " << c.getData()["firstNames"] << " to the database.\n \n";
                 }
                 else{
                     //couldnt add contact

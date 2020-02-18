@@ -11,3 +11,4 @@ include_directories(/usr/local/include/sqlite3)
 #link sqlite to sqlitewrapper
 target_link_libraries(sqlitewrapper sqlite3)
 target_link_libraries(sqlitewrapper contact)
+target_link_libraries(sqlitewrapper json)

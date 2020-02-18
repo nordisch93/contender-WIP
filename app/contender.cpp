@@ -54,9 +54,12 @@ public:
         cout << "mainloop\n";
         string name = "Ander";
         string firstName = "Alex";
-        
-        Contact contact = Contact(name, firstName);
-        cout << contact.printContact();
+        /*Json::Value contactData;
+        contactData["FirstNames"] = firstName;
+        contactData["LastNames"] = name;
+        */
+        //Contact contact = Contact(contactData);
+        //cout << contact.printContact();
 //         while(true){
 //             
 //             

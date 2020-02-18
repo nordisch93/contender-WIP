@@ -153,7 +153,7 @@ int Sqlitewrapper::createTable(std::string name, std::string arguments){
 
 int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObject){
 
-    std::string statementString = std::string(databaseObject->insertStatement());
+    std::string statementString = std::string(databaseObject->getInsertStatement());
     const char* statementPointer = statementString.c_str();
 
     sqlite3_stmt* insertStmt;
@@ -177,7 +177,7 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObjec
 
     /*
     * iterate through all dataBaseFields provided by the DatabaseObject and bind their values to the 
-    * insertStatement. The first argument has index 1 (!!) and should not be touched if it is a 
+    * getInsertStatement. The first argument has index 1 (!!) and should not be touched if it is a 
     * unique id, since it will be set to max_id+1 automatically by the database if left unbound.
     */
 
@@ -262,7 +262,7 @@ int Sqlitewrapper::deleteDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseOb
         return -1;
     }
 
-    std::string deleteStatementString = std::string(databaseObject->deleteStatement());
+    std::string deleteStatementString = std::string(databaseObject->getDeleteStatement());
     const char* deleteStatementPointer = deleteStatementString.c_str();
     sqlite3_stmt* deleteStmt;
     
