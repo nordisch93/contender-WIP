@@ -43,33 +43,28 @@ class Date{
     
 class Contact : public Sqlitewrapper::DatabaseObject{
 private:
-    std::string lastName_;
-    std::string firstName_;
-    std::string phone_;
-    std::string email_;
-    Date birthday_;
+    Json::Value data_;
+    //std::list<std::list<std::string>> data_;
+    inline static const std::list<Sqlitewrapper::ColumnAttributes> layout_ =
+        {Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::TEXT, "FirstNames"),
+        Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::TEXT, "LastNames") };
 public:
     Contact();
-    Contact(std::string, std::string);
+    Contact(std::list<std::string> firstNames, std::list<std::string> lastNames);
     std::string printContact();
 
     virtual std::string insertStatement();
-    virtual std::list<Sqlitewrapper::DatabaseField> getDatabaseFields(){
-        auto list = std::list<Sqlitewrapper::DatabaseField>();
-        list.push_back({Sqlitewrapper::ColumnType::TEXT, firstName_});
-        list.push_back({Sqlitewrapper::ColumnType::TEXT, lastName_});
-        list.push_back({Sqlitewrapper::ColumnType::TEXT, email_});
-        list.push_back({Sqlitewrapper::ColumnType::TEXT, phone_});
-        return list;
+    virtual std::string deleteStatement();
+
+    virtual Json::Value getData(){
+        return data_;
     }
 
-    inline std::string getFirstName(){  return firstName_;}
-    inline std::string getLastName(){  return lastName_;}
-    inline std::string getEmail(){  return email_;}
-    inline std::string getPhone(){  return phone_;}
-    inline Date getBirthday(){  return birthday_;}
-    inline void setBirthday(Date birthday){
-        birthday_ = birthday;
+    /*virtual std::list<std::list<std::string>> getData(){
+        return data_;
+    }*/
+    virtual std::list<Sqlitewrapper::ColumnAttributes> getLayout(){
+        return layout_;
     }
 };
 

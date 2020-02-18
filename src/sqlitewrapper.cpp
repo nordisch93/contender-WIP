@@ -11,51 +11,14 @@
     * Creates a new instance of the sqlitewrapper class.
     *
     * var database:        the contact database wrapped by this class 
+    * TODO: the following functionality is not available yet
     * var isSlim:          if true, statements will only be prepared when needed
     *                      if false, statements will be prepared immediatly
     *
     */
 Sqlitewrapper::Sqlitewrapper(sqlite3** database, bool isSlim){
     database_ = database;
-    isSlim_ = isSlim;
-
-    if(isSlim)
-        return;
-    else{
-        //prepare unbound generic statements to INSERT, DELETE, and SELECT a contact fromt he contact table
-
-        const char* pzTail;
-
-        //unbound sql statements
-        const char* unbound_insert_stmnt = "INSERT INTO contacts ( contact_id, first_name, last_name, email, phone) VALUES (@contact_id, @first_name, @last_name, @email, @phone);";
-
-        const char* unbound_delete_stmnt = "DELETE FROM @table WHERE @attribute = @value";
-
-        const char* unbound_select_stmnt = "INSERT INTO contacts ( contact_id, first_name, last_name, email, phone) VALUES (0, 'Alex', 'Ander', 'a', '0');";
-
-        //prepare statements
-        int prepareInsertSuccess = sqlite3_prepare_v2(
-            *database_,
-            unbound_insert_stmnt,
-            -1,
-            &generic_insert_stmt_,
-            &pzTail
-        );
-        int prepareDeleteSuccess = sqlite3_prepare_v2(
-            *database_,
-            unbound_delete_stmnt,
-            -1,
-            &generic_delete_stmt_,
-            &pzTail
-        );
-        int prepareSelectSuccess = sqlite3_prepare_v2(
-            *database_,
-            unbound_select_stmnt,
-            -1,
-            &generic_select_stmt_,
-            &pzTail
-        );
-    }
+    return;
 }
 
 
@@ -124,9 +87,9 @@ int Sqlitewrapper::closeDb(){
      * Creates an empty table in the database.
      *
      * var name:        The name of the table to be created.
-     * var arguments:   the names, types, and modifiers of the table's                          columns
+     * var arguments:   the names, types, and modifiers of the table's columns
      *               pattern:
-     *                  (name
+     *                  (argument_name
      *                  (INTEGER|TEXT|BLOB)
      *                  (NOT NULL|PRIMARY KEY)*
      *                  )*
@@ -220,10 +183,12 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObjec
 
     int bindReturnValue = SQLITE_OK;
 
-    auto list = databaseObject->getDatabaseFields();
+    auto layout = databaseObject->getLayout();
+    auto data = databaseObject->getData();
+    auto it = layout.begin();
     uint32_t argumentCount = 2;
-    for(DatabaseField field : list){
-        switch(field.type){
+    for(; it != layout.end(); it++, argumentCount++){
+        switch(it->type){
             //TODO: implement other cases
             case ColumnType::INT:
 
@@ -232,17 +197,15 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObjec
 
             break;
             case ColumnType::TEXT:
-                bindReturnValue = sqlite3_bind_text(insertStmt, argumentCount, field.value.c_str(),-1,SQLITE_STATIC);
+                bindReturnValue += sqlite3_bind_text(insertStmt, argumentCount, it->name.c_str(),-1,SQLITE_STATIC);
             break;
             case ColumnType::BLOB:
 
             break;
             default:
-            std::cout << "Undefined ColumnType while trying to add new entry. Field value: " << field.value << "\n";
+            std::cout << "Undefined ColumnType while trying to add new entry. Field value: " << it->name.c_str() << "\n";
             break;
         }
-        argumentCount++; 
-        //std::cout << field.value << argumentCount-1 << " Status: " << bindReturnValue << "\n";
     }
 
     if(bindReturnValue == SQLITE_OK){
@@ -292,9 +255,15 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObjec
     * return:          SQLITE_OK if successful
     *                  errorcode else
     */
-int Sqlitewrapper::deleteDatabaseEntry(std::string attributeName, DatabaseField field){
+int Sqlitewrapper::deleteDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObject){
     
-    const char* deleteStmntText = "DELETE FROM contacts WHERE @attributeName = @id";
+    if(databaseObject->getDatabaseId() == -1){
+        std::cout << "trying to delete an object not present in the database\n";
+        return -1;
+    }
+
+    std::string deleteStatementString = std::string(databaseObject->deleteStatement());
+    const char* deleteStatementPointer = deleteStatementString.c_str();
     sqlite3_stmt* deleteStmt;
     
     if(generic_delete_stmt_ != NULL)
@@ -303,7 +272,7 @@ int Sqlitewrapper::deleteDatabaseEntry(std::string attributeName, DatabaseField 
         const char* pzTail;        
         int prepareReturnValue = sqlite3_prepare_v2(
             *database_,
-            deleteStmntText,
+            deleteStatementPointer,
             -1,
             &deleteStmt,
             &pzTail
@@ -311,17 +280,9 @@ int Sqlitewrapper::deleteDatabaseEntry(std::string attributeName, DatabaseField 
         std::cout << prepareReturnValue << "\n";
     }
 
-    const char* attribute = attributeName.c_str();
-    int bindReturnValue = sqlite3_bind_text(deleteStmt, 1, attribute,-1,SQLITE_STATIC);
-    
-    switch(field.type){
-        case ColumnType::INT:
-            bindReturnValue = sqlite3_bind_int(deleteStmt, 2, std::stoi(field.value)); 
-            break;
-        default:
-            bindReturnValue = sqlite3_bind_text(deleteStmt, 2, field.value.c_str(), -1, SQLITE_STATIC); 
-    }
-    
+    int databaseId = databaseObject->getDatabaseId();
+    int bindReturnValue = bindReturnValue = sqlite3_bind_int(deleteStmt, 1, databaseId);
+
     if(bindReturnValue == SQLITE_OK){
         std::cout << "Successfully prepared delete statement.\n";
 
@@ -365,16 +326,36 @@ int Sqlitewrapper::deleteDatabaseEntry(std::string attributeName, DatabaseField 
 }
 
 /**
-    * Edits a contact from the database with updated data by calculating the difference of the entries and updating oudated data. 
-    *
-    * var contact:     the new contact information to be written
-    * var contact_Id:  the ID of the contact to be deleted
-    *
-    * return:          SQLITE_OK if successful
-    *                  errorcode else
-    */
-/* int Sqlitewrapper::editContact(Contact contact, int contactId){
-    return 0;
-} */
+ * Carries out a Select operation on the database and writes a list of all retreived db-entries to
+ * the given pointer.
+ * 
+ * var destination:                     the pointer where the list is written to
+ * var selectStatement:                 the statement to be used to select db-entries
+ * 
+ * return: SQLITE_OK            if successful
+ *                              errorcode else
+ */
 
+int Sqlitewrapper::selectDatabaseObjects(DatabaseObject* destination, std::string selectStatement){
+    std::cout << "working on it\n";
 
+    int stepReturnValue;
+    int finalizeReturnValue;
+    int prepareReturnValue;
+
+    sqlite3_stmt* selectStmt;
+    const char* pzTail;
+    const char* selectStmntText = selectStatement.c_str();
+    prepareReturnValue = sqlite3_prepare_v2(
+        *database_,
+        selectStmntText,
+        -1,
+        &selectStmt,
+        &pzTail
+    );
+    if(prepareReturnValue == SQLITE_OK)
+        std::cout << "Successfully prepared Select Statement\n";
+    else
+        std::cout << "Error preparing Select Statement " << sqlite3_extended_errcode(*database_) << "\n";            
+
+}

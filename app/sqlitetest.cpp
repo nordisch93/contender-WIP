@@ -33,12 +33,11 @@ int main(int argc, char* argv[]){
         
         auto list = std::list<Contact>();
 
-        list.push_back(Contact("peter", "silie"));
-        list.push_back(Contact("Mike", "Hunt"));
-        list.push_back(Contact("Ben", "Dover"));
-        list.push_back(Contact("Mike", "Hunt"));
-        list.push_back(Contact("Moe", "Lester"));
-        list.push_back(Contact("Axel", "Schweiß"));
+        list.push_back(Contact({std::string("peter")}, {std::string("silie")}));
+        list.push_back(Contact({std::string("Mike")}, {std::string("Hunt")}));
+        list.push_back(Contact({std::string("Mike")}, {std::string("Litoris")}));
+        list.push_back(Contact({std::string("Ben")}, {std::string("Dover")}));
+        list.push_back(Contact({std::string("Moe")}, {std::string("Lester")}));
 
         std::string tableName = "contacts";
         std::string arguments = "contact_id INTEGER PRIMARY KEY, first_name TEXT NOT NULL, last_name TEXT, email TEXT, phone TEXT";
@@ -51,7 +50,7 @@ int main(int argc, char* argv[]){
                 temp = sqlw.addDatabaseEntry(&c);
                 if(temp == SQLITE_OK){
                     //everything fine
-                    std::cout << "Added " << c.getFirstName() << " " << c.getLastName() << " to the database.\n";
+                    std::cout << "Added " << c.getData()["FirstNames"] << " to the database.\n";
                 }
                 else{
                     //couldnt add contact
@@ -61,9 +60,13 @@ int main(int argc, char* argv[]){
         else{
             //couldnt create table
         }
+
+        Sqlitewrapper::DatabaseObject* destination;
+        sqlw.selectDatabaseObjects(destination, std::string("DELETE FROM contacts WHERE contact_id = @contact_id;"));
         
         //delete an entry
-        sqlw.deleteDatabaseEntry("contact_id", {Sqlitewrapper::ColumnType::INT, std::string("3")});
+        Contact d = list.front();
+        sqlw.deleteDatabaseEntry(&d);
 
         //close database
         if(dbIsOpen){

@@ -6,7 +6,7 @@
 #include<cstring>
 #include<list>
 #include"sqlite3.h"
-
+#include"json.h"
 
 class Sqlitewrapper{
 
@@ -24,7 +24,7 @@ public:
      * This enum lists the four possible datatypes a column in a database can have.
      */
     enum ColumnType{INT = SQLITE_INTEGER, FLOAT = SQLITE_FLOAT,
-                    TEXT = SQLITE3_TEXT, BLOB = SQLITE_BLOB};
+                    TEXT = SQLITE_TEXT, BLOB = SQLITE_BLOB};
     
     /**
      * This struct holds the type and the value of a specific field belonging to a DatabaseObject.
@@ -33,6 +33,15 @@ public:
     struct DatabaseField{
         ColumnType type;
         std::string value;
+    };
+
+    struct ColumnAttributes{
+        ColumnAttributes(ColumnType t, std::string n){
+            type = t;
+            name = n;
+        }
+        ColumnType type;
+        std::string name;
     };
     /**
      * This Interface defines the methods that any Class has to implement in order to store them in
@@ -44,7 +53,15 @@ public:
     public:
         virtual ~DatabaseObject(){}
         virtual std::string insertStatement() = 0;
-        virtual std::list<DatabaseField> getDatabaseFields() = 0;
+        virtual std::string deleteStatement() = 0;
+        virtual Json::Value getData() = 0;
+        //virtual std::list<std::list<std::string>> getData() = 0;
+        virtual std::list<ColumnAttributes> getLayout() = 0;
+        
+        int databaseId_ = -1;
+        virtual int getDatabaseId() { return databaseId_;};
+    private:
+        static std::string tableName;                                   //the name of the table containing the objects of this type 
     };
 
     /**
@@ -123,18 +140,20 @@ public:
      * return:          SQLITE_OK if successful
      *                  errorcode else
      */
-    int deleteDatabaseEntry(std::string attributeName, DatabaseField field);
+    int deleteDatabaseEntry(DatabaseObject* databaseObject);
 
     /**
-     * Edits a contact from the database with updated data by calculating the difference of the entries and updating oudated data.
-     *
-     * var contact:     the new contact information to be written
-     * var contact_Id:  the ID of the contact to be deleted
-     *
-     * return:          SQLITE_OK if successful
-     *                  errorcode else
+     * Carries out a Select operation on the database and writes a list of all retreived db-entries to
+     * the given pointer.
+     * 
+     * var destination:                     the pointer where the list is written to
+     * var selectStatement:                 the statement to be used to select db-entries
+     * 
+     * return: SQLITE_OK            if successful
+     *                              errorcode else
      */
-    //int editContact(Contact contact, int contactId);
+
+    int selectDatabaseObjects(DatabaseObject* destination, std::string selectStatement);
 
     /**
      * Defragments the database by copying the db to a temporary db ignoring all free spaces and copying it back to the original db overwriting it.

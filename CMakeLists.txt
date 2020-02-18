@@ -17,12 +17,13 @@ add_subdirectory(src)
 
 #add custom libraries to project
 include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(${PROJECT_SOURCE_DIR}/src/json/json)
 link_directories(${PROJECT_SOURCE_DIR}/src)
-
+link_directories(${PROJECT_SOURCE_DIR}/src/json/json)
 
 #add sqlite3 to project
 include_directories(/usr/local/include/sqlite3)
-link_directories(/usr/local/lib)
+#link_directories(/usr/local/lib)
 
 #add Threads package
 set(THREADS_PREFER_PTHREAD_FLAG ON)

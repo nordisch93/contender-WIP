@@ -73,19 +73,27 @@ void Date::setDate(uint32_t day, uint32_t month, uint32_t year){
     }
 };
 
-Contact::Contact(){
-    lastName_ ="";
-    firstName_="";
-}
-Contact::Contact(std::string firstName, std::string lastName){
-    lastName_ = lastName;
-    firstName_ = firstName;
-}
-
-std::string Contact::printContact(){
-    return firstName_.append(lastName_);
-}
+Contact::Contact(){}
+Contact::Contact(std::list<std::string> firstNames, std::list<std::string> lastNames){
+        auto appendNames = [](std::list<std::string> listOfAllNames){
+            std::string stringOfAllNames = "(";
+            for(auto i = listOfAllNames.begin(); i != listOfAllNames.end(); ++i){
+                stringOfAllNames.append(*i);
+                stringOfAllNames.append(", ");
+            }
+            return stringOfAllNames.append(")");
+        };
+        data_["firstNames"] = appendNames(firstNames);
+        data_["lastNames"] = appendNames(lastNames);
+        
+        /*data_ = std::list<std::list<std::string>>();
+        data_.push_back(firstNames);
+        data_.push_back(lastNames);*/
+};
 
 std::string Contact::insertStatement(){
     return "INSERT INTO contacts (contact_id, first_name, last_name, email, phone) VALUES (@contact_id, @first_name, @last_name, @email, @phone);";
+}
+std::string Contact::deleteStatement(){
+    return "DELETE FROM contacts WHERE contact_id = @contact_id;";
 }
