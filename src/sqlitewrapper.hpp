@@ -24,9 +24,14 @@ public:
     /**
      * This enum lists the four possible datatypes a column in a database can have.
      */
-    enum ColumnType{INT = SQLITE_INTEGER, FLOAT = SQLITE_FLOAT,
+    enum ColumnType{INT = SQLITE_INTEGER, DOUBLE = SQLITE_FLOAT,
                     TEXT = SQLITE_TEXT, BLOB = SQLITE_BLOB};
-    
+
+    /**
+     * This enum lists the possible modifiers of an SQL-Tables Columns
+     */
+    enum ColumnModifier{NOT_NULL = SQLITE_CONSTRAINT_NOTNULL, PRIMARY_KEY = SQLITE_CONSTRAINT_PRIMARYKEY};
+        
     /**
      * This struct holds the type and the value of a specific field belonging to a DatabaseObject.
      * The value is always stored as a string in this struct, even though the type my not be TEXT.
@@ -36,39 +41,53 @@ public:
         std::string value;
     };
 
+    /**
+     * A Struct that holds a ComlumnType and a Name of the the values stored in a database column.
+     */
+
     struct ColumnAttributes{
+        ColumnAttributes(ColumnType t, std::string n, std::list<int> c){
+            type = t;
+            name = n;
+            constraints = c;
+        }
         ColumnAttributes(ColumnType t, std::string n){
             type = t;
             name = n;
+            constraints = std::list<int>();
         }
         ColumnType type;
         std::string name;
+        std::list<int> constraints;
     };
+
     /**
      * This Interface defines the methods that any Class has to implement in order to store them in
      * the database via this sqlitewrapper.
-     * A DatabaseObject needs predefined statements for Inserting, etc. as well as a list of
-     * DatabaseFields containing the type and values (as strings) of the field.
+     * A DatabaseObject needs the following:
+     *  -Predefined statements for Inserting, etc. 
+     *  -A Layout that contains the Attributes (Typpe and Name) of each column
+     *  -A Json::Value field holding the Object_s data
+     *  -An int holding the current Id within the Database. Defaults to zero in case the Object is only present in memory, but not in the database.
      */
     class DatabaseObject{
     public:
         virtual ~DatabaseObject(){};
         virtual std::string getInsertStatement() = 0;
         virtual std::string getDeleteStatement() = 0;
-        virtual Json::Value getData() = 0;
-        //virtual std::list<std::list<std::string>> getData() = 0;
+        
         virtual std::list<ColumnAttributes> getLayout() = 0;
+        
+        virtual Json::Value getData() = 0;
         
         int databaseId_ = -1;
         virtual int getDatabaseId() { return databaseId_;};
-    private:
-        static std::string tableName;                                   //the name of the table containing the objects of this type 
     };
 
     /**
      * Creates a new instance of the sqlitewrapper class.
      *
-     * var database:        the contact database wrapped by this class 
+     * var database:        the database wrapped by this class 
      * var isSlim:          if true, statements will only be prepared when needed
      *                      if false, statements will be prepared immediatly
      *
@@ -78,6 +97,7 @@ public:
     /**
      * Tries to open a database connection at the specified path and returns
      * the sqlite3 return code.
+     * 
      * var filename:  the path and filename of the database
      *
      * return:  SQLITE_OK if successful
@@ -108,17 +128,12 @@ public:
      * Creates an empty table in the database.
      *
      * var name:        the name of the table to be created
-     * var arguments:   the names, types, and modifiers of the table's                          columns
-     *               pattern:
-     *                  (name
-     *                  (INTEGER|TEXT|BLOB)
-     *                  (NOT NULL|PRIMARY KEY)*
-     *                  )*
+     * var columns:     the columns of the table to be created (name, type, and optionally modifiers)
      *
      * return:          SQLITE_OK if successful
      *                  extended errorcode else
      */
-    int createTable(std::string name, std::string arguments);
+    int createTable(std::string name, std::list<ColumnAttributes> columns);
 
 
     /**
@@ -154,7 +169,7 @@ public:
      *                              errorcode else
      */
 
-    int selectDatabaseObjects(DatabaseObject* destination, std::string selectStatement);
+    int selectDatabaseObjects(std::list<Json::Value>* destination, std::string selectStatement);
 
     /**
      * Defragments the database by copying the db to a temporary db ignoring all free spaces and copying it back to the original db overwriting it.

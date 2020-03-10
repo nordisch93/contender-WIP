@@ -45,13 +45,14 @@ class Contact : public Sqlitewrapper::DatabaseObject{
 private:
     Json::Value data_;
     inline static const std::list<Sqlitewrapper::ColumnAttributes> layout_ =
-        {Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::TEXT, "FirstNames"),
-        Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::TEXT, "LastNames") };
+        {Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::INT, "id"),
+        Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::TEXT, "firstNames"),
+        Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::TEXT, "lastNames") };
 public:
     Contact();
     Contact(Json::Value);
     Contact(std::list<std::string> firstNames, std::list<std::string> lastNames);
-    std::string printContact();
+    void printContact();
 
     std::string getInsertStatement();
     std::string getDeleteStatement();

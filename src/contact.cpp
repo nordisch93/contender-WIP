@@ -17,7 +17,7 @@ bool Date::checkIfValidDate(uint32_t day, uint32_t month, uint32_t year){
     if(month < 1 || month > 12)
         return false;
     switch(month){
-        //motnsh with 31 days
+        //months with 31 days
         [[fallthrough]]case MONTH_JANUARY:
         [[fallthrough]]case MONTH_MARCH:
         [[fallthrough]]case MONTH_MAY:
@@ -74,26 +74,69 @@ void Date::setDate(uint32_t day, uint32_t month, uint32_t year){
     }
 };
 
-Contact::Contact(){};
+Contact::Contact(){ data_ = Json::Value();};
 Contact::Contact(Json::Value data){
- data_ = data;
+    //contact data coming from the database
+    if(data["fromDatabase"] == true){
+        uint32_t count = 0;
+        for(auto i = layout_.begin(); i != layout_.end(); i++, count++){
+            if(data[std::to_string(count)].isDouble()){
+                data_[i->name] = data[std::to_string(count)].asDouble();
+                //std::cout << i->name << " was changed to " << data[std::to_string(count)].asDouble() << "\n";
+            }
+            else if(data[std::to_string(count)].isInt()){
+                data_[i->name] = data[std::to_string(count)].asInt();
+                //std::cout << i->name << " was changed to " << data[std::to_string(count)].asInt() << "\n";
+            }
+            else if(data[std::to_string(count)].isString()){
+                data_[i->name] = data[std::to_string(count)].asCString();
+                //std::cout << i->name << " was changed to " << data[std::to_string(count)].asCString() << "\n";
+            }
+            else if(data[std::to_string(count)].isBool()){
+                if(data[std::to_string(count)].isConvertibleTo(Json::ValueType::stringValue)){
+                    data_[i->name] = data[std::to_string(count)].asString();
+                    //std::cout << i->name << " was changed to " << data[std::to_string(count)].asString() << "\n";
+                }
+                data_[i->name] = data[std::to_string(count)].asBool();
+                //std::cout << i->name << " was changed to " << data[std::to_string(count)].asBool() << "\n";
+            }
+            else{
+                std::cerr << "Runtime error in Contact::Contact(Json::Value data): data contains unknown datatype!";
+                throw std::runtime_error("Runtime error in Contact::Contact(Json::Value data): data contains unknown datatype!");
+            }
+        }
+    }
+    //in this case the contact data is coming from the ui
+    else{
+        data_ = data;
+        data_["fromDatabase"] = false;
+        data_["id"] = NULL;
+    }
 };
 Contact::Contact(std::list<std::string> firstNames, std::list<std::string> lastNames){
-        auto appendNames = [](std::list<std::string> listOfAllNames){
-            std::string stringOfAllNames = "(";
+        data_["fromDatabase"] = false;
+        auto flattenList = [](std::list<std::string> listOfAllNames){
+            std::string stringOfAllNames = "[";
             for(auto i = listOfAllNames.begin(); i != listOfAllNames.end(); ++i){
-                stringOfAllNames.append(*i);
-                stringOfAllNames.append(", ");
+                if(i != listOfAllNames.begin())
+                    stringOfAllNames.append(", ");
+                stringOfAllNames.append(*i);                
             }
-            return stringOfAllNames.append(")");
+            return stringOfAllNames.append("]");
         };
-        data_["firstNames"] = appendNames(firstNames);
-        data_["lastNames"] = appendNames(lastNames);
+        data_["firstNames"] = flattenList(firstNames);
+        data_["lastNames"] = flattenList(lastNames);
+        data_["id"] = NULL;
 };
 
 std::string Contact::getInsertStatement(){
     return "INSERT INTO contacts (contact_id, first_name, last_name, email, phone) VALUES (@contact_id, @first_name, @last_name, @email, @phone);";
-}
+};
 std::string Contact::getDeleteStatement(){
     return "DELETE FROM contacts WHERE contact_id = @contact_id;";
+};
+
+void Contact::printContact(){
+    std::cout << "First Name: " << (data_["firstNames"].empty() ? "empty" : std::string(data_["firstNames"].asCString())) << "\n";
+    std::cout << "Last Name: " << (data_["lastNames"].empty() ? "empty" : std::string(data_["lastNames"].asCString())) << "\n";
 }

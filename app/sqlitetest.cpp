@@ -41,9 +41,19 @@ int main(int argc, char* argv[]){
 
 
         std::string tableName = "contacts";
-        std::string arguments = "contact_id INTEGER PRIMARY KEY, first_name TEXT NOT NULL, last_name TEXT, email TEXT, phone TEXT";
-        
-        int temp = sqlw.createTable(tableName, arguments);
+
+        auto attrList= std::list<Sqlitewrapper::ColumnAttributes>();
+        auto constraintList = std::list<int>();
+        constraintList.push_back(SQLITE_CONSTRAINT_PRIMARYKEY);
+        attrList.push_back(Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::INT, std::string("contact_id"), constraintList));
+        constraintList.pop_back();
+        constraintList.push_back(SQLITE_CONSTRAINT_NOTNULL);
+        attrList.push_back(Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::TEXT, std::string("first_name"), constraintList));
+        attrList.push_back(Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::TEXT, std::string("last_name")));
+        attrList.push_back(Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::TEXT, std::string("email")));
+        attrList.push_back(Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::TEXT, std::string("phone")));
+
+        int temp = sqlw.createTable(tableName, attrList);
         
         if(temp == SQLITE_OK){
             for(Contact c : list){
@@ -61,11 +71,22 @@ int main(int argc, char* argv[]){
             //couldnt create table
         }
 
-        Sqlitewrapper::DatabaseObject* destination;
-        sqlw.selectDatabaseObjects(destination, std::string("DELETE FROM contacts WHERE contact_id = @contact_id;"));
+        auto destination = new std::list<Json::Value>;
+        sqlw.selectDatabaseObjects(destination, std::string("SELECT * FROM contacts;"));
+
+        auto list2 = std::list<Contact>();
+
+        for(Json::Value d : *destination){
+            Contact c = Contact(d);
+            list2.push_back(c);
+        }
+
+        for(Contact c : list2){
+            c.printContact();
+        }
         
         //delete an entry
-        Contact d = list.front();
+        Contact d = list2.front();
         sqlw.deleteDatabaseEntry(&d);
 
         //close database

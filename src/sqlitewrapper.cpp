@@ -1,4 +1,3 @@
-#include<iostream>
 #include<string>
 #include<cstring>
 #include<stdexcept>
@@ -82,25 +81,57 @@ int Sqlitewrapper::closeDb(){
     return sqlite3_close_v2(*database_);
 }
 
-
 /**
      * Creates an empty table in the database.
      *
-     * var name:        The name of the table to be created.
-     * var arguments:   the names, types, and modifiers of the table's columns
-     *               pattern:
-     *                  (argument_name
-     *                  (INTEGER|TEXT|BLOB)
-     *                  (NOT NULL|PRIMARY KEY)*
-     *                  )*
+     * var name:        the name of the table to be created
+     * var columns:     the columns of the table to be created (name, type, and optionally modifiers)
      *
      * return:          SQLITE_OK if successful
      *                  extended errorcode else
      */
-int Sqlitewrapper::createTable(std::string name, std::string arguments){
+
+int Sqlitewrapper::createTable(std::string name, std::list<ColumnAttributes> columns){
     int stepReturnValue;
     int finalizeReturnValue;
     int prepareReturnValue;
+
+    //Assemble the argumentsstring from the columns
+    std::string arguments;
+    for(ColumnAttributes c : columns){
+        arguments.append(c.name);
+        switch(c.type){
+            case ColumnType::BLOB:
+            arguments.append(" BLOB");
+            break;
+            case ColumnType::DOUBLE:
+            arguments.append(" REAL");
+            break;
+            case ColumnType::INT:
+            arguments.append(" INTEGER");
+            break;
+            case ColumnType::TEXT:
+            arguments.append(" TEXT");
+            break;
+        }
+        for(int con : c.constraints){
+            switch(con){
+                case SQLITE_CONSTRAINT_NOTNULL:
+                arguments.append(" NOT NULL");
+                break;
+                case SQLITE_CONSTRAINT_PRIMARYKEY:
+                arguments.append(" PRIMARY KEY");
+                break;
+                default:
+                break;
+            }
+        }
+        arguments.append(", ");
+    }
+    arguments.erase(arguments.length()-1);
+    arguments.erase(arguments.length()-1);
+    std::cout << arguments;
+
 
     std::string temp = "CREATE TABLE IF NOT EXISTS " + name + " (" + arguments + ");";
 
@@ -186,24 +217,31 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObjec
     auto layout = databaseObject->getLayout();
     auto data = databaseObject->getData();
     auto it = layout.begin();
-    uint32_t argumentCount = 2;
+    /* argumentCount keeps track of the position of the variable to be bound within the statement.
+    Has to start at 1 since the leftmost field in prepare statement (usually id) has index 1
+    */
+    uint32_t argumentCount = 1;
     for(; it != layout.end(); it++, argumentCount++){
         switch(it->type){
-            //TODO: implement other cases
             case ColumnType::INT:
-
+                if(data[it->name.c_str()] != NULL){
+                    bindReturnValue += sqlite3_bind_int(insertStmt, argumentCount, data[it->name.c_str()].asInt());
+                }
             break;
-            case ColumnType::FLOAT:
-
+            case ColumnType::DOUBLE:
+                if(data[it->name.c_str()] != NULL){
+                    bindReturnValue += sqlite3_bind_double(insertStmt, argumentCount, data[it->name.c_str()].asDouble());
+                }
             break;
             case ColumnType::TEXT:
-                bindReturnValue += sqlite3_bind_text(insertStmt, argumentCount, it->name.c_str(),-1,SQLITE_STATIC);
+                bindReturnValue += sqlite3_bind_text(insertStmt, argumentCount, data[it->name.c_str()].asCString(),-1,SQLITE_STATIC);
             break;
             case ColumnType::BLOB:
-
+            //TODO: implement BLOB cases
+            std::cout << "we somehow slipped into blob case when binding variables to prepared statement.";
             break;
             default:
-            std::cout << "Undefined ColumnType while trying to add new entry. Field value: " << it->name.c_str() << "\n";
+            std::cout << "Undefined ColumnType while trying to add new entry. Field value: " << data[it->name.c_str()].asCString() << "\n Field Type: " << it->name.c_str() << "\n";
             break;
         }
     }
@@ -248,16 +286,17 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObjec
 }
 
 /**
-    * Deletes a contact from the database by using a DELETE statement on the contact table. If a generic delete statement already exists it is rebound and used, otherwise a new delete statement is prepared.
+    * Deletes a contact from the database by using a DELETE statement on the contact table. If a generic delete statement already exists it is rebound and used,
+    * otherwise a new delete statement is prepared.
     * 
-    * var contact_Id:  the ID of the contact to be deleted
+    * var databaseObject:  the databaseObject to be deleted
     * 
-    * return:          SQLITE_OK if successful
-    *                  errorcode else
+    * return:              SQLITE_OK if successful
+    *                      errorcode else
     */
 int Sqlitewrapper::deleteDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObject){
     
-    if(databaseObject->getDatabaseId() == -1){
+    if(databaseObject->getData()["id"] == NULL){
         std::cout << "trying to delete an object not present in the database\n";
         return -1;
     }
@@ -277,7 +316,7 @@ int Sqlitewrapper::deleteDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseOb
             &deleteStmt,
             &pzTail
         );
-        std::cout << prepareReturnValue << "\n";
+        //std::cout << prepareReturnValue << "\n";
     }
 
     int databaseId = databaseObject->getDatabaseId();
@@ -333,10 +372,10 @@ int Sqlitewrapper::deleteDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseOb
  * var selectStatement:                 the statement to be used to select db-entries
  * 
  * return: SQLITE_OK            if successful
- *                              errorcode else
+ *         errorcode            else
  */
 
-int Sqlitewrapper::selectDatabaseObjects(DatabaseObject* destination, std::string selectStatement){
+int Sqlitewrapper::selectDatabaseObjects(std::list<Json::Value>* destination, std::string selectStatement){
     std::cout << "working on it\n";
 
     int stepReturnValue;
@@ -353,9 +392,57 @@ int Sqlitewrapper::selectDatabaseObjects(DatabaseObject* destination, std::strin
         &selectStmt,
         &pzTail
     );
-    if(prepareReturnValue == SQLITE_OK)
+    if(prepareReturnValue == SQLITE_OK){
         std::cout << "Successfully prepared Select Statement\n";
-    else
-        std::cout << "Error preparing Select Statement " << sqlite3_extended_errcode(*database_) << "\n";            
-
+        //Retrieve data from all rows that satisfy the query's requirements and create a Json-Object for each of them.
+        int stepReturnValue = sqlite3_step(selectStmt);
+        while(stepReturnValue == SQLITE_ROW){
+            //std::cout << "step successful \n";
+            
+            //Build a Json from the retrieved row
+            Json::Value currentRow = Json::Value();
+            currentRow["fromDatabase"] = true;
+            for(int i = 0; i < sqlite3_column_count(selectStmt); i++){
+                //std::cout << i;
+                switch(sqlite3_column_type(selectStmt, i)){
+                    case SQLITE3_TEXT:
+                    //sqlite3_column_text returns a const UNSIGNED char* which will be interpreted as bool by jsoncpp unless cast to const char*
+                    currentRow[std::to_string(i)] = reinterpret_cast<const char*>(sqlite3_column_text(selectStmt, i));
+                    
+                    //std::cout << "read " << sqlite3_column_text(selectStmt, i) << "from the database and placed at"<< std::to_string(i) << "\n";
+                    //std::cout << "value type of " << std::to_string(i) << " is " << currentRow[std::to_string(i)].type() << "\n";
+                    //std::cout << "wrote " << currentRow[std::to_string(i)].asString() << " to JSON\n";
+                    break;
+                    case SQLITE_FLOAT:
+                    currentRow[std::to_string(i)] = sqlite3_column_double(selectStmt, i);
+                    break;
+                    case SQLITE_INTEGER:
+                    currentRow[std::to_string(i)] = sqlite3_column_int(selectStmt, i);
+                    break;
+                    case SQLITE_BLOB:
+                    currentRow[std::to_string(i)] = sqlite3_column_blob(selectStmt, i);
+                    break;
+                    case SQLITE_NULL:
+                    currentRow[std::to_string(i)] = NULL;
+                    break;
+                    default:
+                    std::cout << "unknown column type returned by step.\n";
+                    break;
+                }
+            }
+            destination->push_back(currentRow);
+            stepReturnValue = sqlite3_step(selectStmt);
+        }
+        if(stepReturnValue == SQLITE_DONE){
+            std::cout << "step finished \n";
+        }
+        else{
+            std::cout << "sqlite3_step() return with errorcode " << sqlite3_extended_errcode(*database_) << "\n";
+            return 1;
+        }
+    }        
+    else{
+            std::cout << "Error preparing Select Statement " << sqlite3_extended_errcode(*database_) << "\n";
+            return 1;
+    }        
 }
