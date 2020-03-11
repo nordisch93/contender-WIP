@@ -47,16 +47,10 @@ const std::string Sqlitewrapper::DatabaseTable::getInsertStatement(){
  */
 const std::string Sqlitewrapper::DatabaseTable::getDeleteStatement(){
     std::string statement = "DELETE FROM " + name_ + " WHERE ";
-    //search for primary key
-    for(const ColumnAttributes c : layout_){
-        for(int constraint : c.constraints){
-            if(constraint == SQLITE_CONSTRAINT_PRIMARYKEY){
-                return statement.append(c.name + " = @" + c.name + ";");
-            }
-        }
-    }
-    //if no primary key was found, default to using the first attribute
-    return statement.append(layout_.front().name + " = @" + layout_.front().name + ";");
+    //use primary key
+    auto it = layout_.begin();
+    advance(it, primaryKey_);
+    return statement.append(it->name + " = @" + it->name + ";");
 }
 
 /**
@@ -273,12 +267,12 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseTable table, Sqlitewr
         //std::cout << it->name << it->type << "\n";
         switch(it->type){
             case ColumnType::INT:
-                if(data[it->name.c_str()] != NULL){
+                if(!data[it->name.c_str()].empty()  && !data[it->name.c_str()].isNull()){
                     bindReturnValue += sqlite3_bind_int(insertStmt, argumentCount, data[it->name.c_str()].asInt());
                 }
             break;
             case ColumnType::DOUBLE:
-                if(data[it->name.c_str()] != NULL){
+                if(!data[it->name.c_str()].empty() && !data[it->name.c_str()].isNull()){
                     bindReturnValue += sqlite3_bind_double(insertStmt, argumentCount, data[it->name.c_str()].asDouble());
                 }
             break;
@@ -345,7 +339,12 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseTable table, Sqlitewr
     */
 int Sqlitewrapper::deleteDatabaseEntry(Sqlitewrapper::DatabaseTable table, Sqlitewrapper::DatabaseObject *databaseObject){
     
-    if(databaseObject->getData()["id"] == NULL){
+    std::string primaryKeyName = "";
+    auto it = table.layout_.begin();
+    advance(it, table.primaryKey_);
+    primaryKeyName = it->name;
+
+    if(databaseObject->getData()[primaryKeyName].empty() || databaseObject->getData()[primaryKeyName].isNull()){
         std::cout << "trying to delete an object not present in the database\n";
         return -1;
     }
@@ -369,7 +368,7 @@ int Sqlitewrapper::deleteDatabaseEntry(Sqlitewrapper::DatabaseTable table, Sqlit
         //std::cout << prepareReturnValue << "\n";
     }
 
-    int databaseId = databaseObject->getDatabaseId();
+    int databaseId = databaseObject->getData()[primaryKeyName].asInt();
     int bindReturnValue = bindReturnValue = sqlite3_bind_int(deleteStmt, 1, databaseId);
 
     if(bindReturnValue == SQLITE_OK){
@@ -474,7 +473,7 @@ int Sqlitewrapper::selectDatabaseObjects(std::list<Json::Value>* destination, st
                     currentRow[std::to_string(i)] = sqlite3_column_blob(selectStmt, i);
                     break;
                     case SQLITE_NULL:
-                    currentRow[std::to_string(i)] = NULL;
+                    currentRow[std::to_string(i)] = Json::Value::nullSingleton;
                     break;
                     default:
                     std::cout << "unknown column type returned by step.\n";

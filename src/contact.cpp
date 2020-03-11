@@ -110,8 +110,6 @@ Contact::Contact(Sqlitewrapper::DatabaseTable table, Json::Value data){
     else{
         data_ = data;
         data_["fromDatabase"] = false;
-        data_["contact_id"] = NULL;
-        databaseId_ = -1;
     }
 };
 Contact::Contact(std::list<std::string> firstNames, std::list<std::string> lastNames){
@@ -127,7 +125,6 @@ Contact::Contact(std::list<std::string> firstNames, std::list<std::string> lastN
         };
         data_["first_name"] = flattenList(firstNames);
         data_["last_name"] = flattenList(lastNames);
-        data_["contact_id"] = NULL;
         data_["email"] = "";
         data_["phone"] = "";
 };

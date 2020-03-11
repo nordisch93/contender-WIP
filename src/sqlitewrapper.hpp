@@ -64,13 +64,15 @@ public:
     /**
      * This Class is a representation of a single table within the database. It holds the layout in form of a list
      * of columnAttributes, its own name and can be used to derive the database statements such as delete and insert.
-     * Every DatabaseObject needs to be constructed bound to a specific table.
+     * It also holds a list with the indices of all primary keys.
      */
     class DatabaseTable{
-        public: DatabaseTable(std::string name, std::list<ColumnAttributes> layout): name_(name), layout_(layout){};
+        public: DatabaseTable(std::string name, std::list<ColumnAttributes> layout, uint primaryKey): name_(name), layout_(layout), primaryKey_(primaryKey){};
         
         const std::string name_;
         const std::list<ColumnAttributes> layout_;
+
+        const uint primaryKey_;
 
         const std::string getInsertStatement();
         const std::string getDeleteStatement();
@@ -90,9 +92,6 @@ public:
     public:
         virtual ~DatabaseObject(){};        
         virtual Json::Value getData() = 0;
-        
-        int databaseId_ = -1;
-        virtual int getDatabaseId() { return databaseId_;};
     };
 
     /**

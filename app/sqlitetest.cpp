@@ -53,7 +53,7 @@ int main(int argc, char* argv[]){
         attrList.push_back(Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::TEXT, std::string("email")));
         attrList.push_back(Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::TEXT, std::string("phone")));
 
-        Sqlitewrapper::DatabaseTable contactTable = Sqlitewrapper::DatabaseTable(std::string("contacts"), attrList);
+        Sqlitewrapper::DatabaseTable contactTable = Sqlitewrapper::DatabaseTable(std::string("contacts"), attrList, 0);
 
         int temp = sqlw.createTable(contactTable);
         
