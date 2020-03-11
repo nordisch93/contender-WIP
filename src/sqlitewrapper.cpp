@@ -20,6 +20,87 @@ Sqlitewrapper::Sqlitewrapper(sqlite3** database, bool isSlim){
     return;
 }
 
+/**
+ * Assembles the insert statement for objects to be inserted into this table.
+ * 
+ * return:          the insert statement
+ */
+const std::string Sqlitewrapper::DatabaseTable::getInsertStatement(){
+    std::string statement = ("INSERT INTO " + name_ + " (");
+    for(const ColumnAttributes c : layout_){
+        statement.append(c.name).append(", ");
+    }
+    statement.erase(statement.length()-1).erase(statement.length()-1);
+    statement.append(") VALUES (");
+    for(const ColumnAttributes c : layout_){
+        statement.append("@").append(c.name).append(", ");
+    }
+    statement.erase(statement.length()-1).erase(statement.length()-1);
+    statement.append(");");
+    return statement;
+}
+
+/**
+ * Assembles the delete statement for objects to be deleted form this table
+ * 
+ * return:          the delete statement
+ */
+const std::string Sqlitewrapper::DatabaseTable::getDeleteStatement(){
+    std::string statement = "DELETE FROM " + name_ + " WHERE ";
+    //search for primary key
+    for(const ColumnAttributes c : layout_){
+        for(int constraint : c.constraints){
+            if(constraint == SQLITE_CONSTRAINT_PRIMARYKEY){
+                return statement.append(c.name + " = @" + c.name + ";");
+            }
+        }
+    }
+    //if no primary key was found, default to using the first attribute
+    return statement.append(layout_.front().name + " = @" + layout_.front().name + ";");
+}
+
+/**
+ * Assembles the create statement for objects to be deleted form this table
+ * 
+ * return:          the create statement
+ */
+const std::string Sqlitewrapper::DatabaseTable::getCreateStatement(){
+    std::string arguments;
+    for(ColumnAttributes c : layout_){
+        arguments.append(c.name);
+        switch(c.type){
+            case ColumnType::BLOB:
+            arguments.append(" BLOB");
+            break;
+            case ColumnType::DOUBLE:
+            arguments.append(" REAL");
+            break;
+            case ColumnType::INT:
+            arguments.append(" INTEGER");
+            break;
+            case ColumnType::TEXT:
+            arguments.append(" TEXT");
+            break;
+        }
+        for(int con : c.constraints){
+            switch(con){
+                case SQLITE_CONSTRAINT_NOTNULL:
+                arguments.append(" NOT NULL");
+                break;
+                case SQLITE_CONSTRAINT_PRIMARYKEY:
+                arguments.append(" PRIMARY KEY");
+                break;
+                default:
+                break;
+            }
+        }
+        arguments.append(", ");
+    }
+    arguments.erase(arguments.length()-1);
+    arguments.erase(arguments.length()-1);
+
+    return "CREATE TABLE IF NOT EXISTS " + name_ + " (" + arguments + ");";
+}
 
 /**
     * Tries to open a database connection at the specified path and returns
@@ -91,50 +172,12 @@ int Sqlitewrapper::closeDb(){
      *                  extended errorcode else
      */
 
-int Sqlitewrapper::createTable(std::string name, std::list<ColumnAttributes> columns){
+int Sqlitewrapper::createTable(Sqlitewrapper::DatabaseTable table){
     int stepReturnValue;
     int finalizeReturnValue;
     int prepareReturnValue;
 
-    //Assemble the argumentsstring from the columns
-    std::string arguments;
-    for(ColumnAttributes c : columns){
-        arguments.append(c.name);
-        switch(c.type){
-            case ColumnType::BLOB:
-            arguments.append(" BLOB");
-            break;
-            case ColumnType::DOUBLE:
-            arguments.append(" REAL");
-            break;
-            case ColumnType::INT:
-            arguments.append(" INTEGER");
-            break;
-            case ColumnType::TEXT:
-            arguments.append(" TEXT");
-            break;
-        }
-        for(int con : c.constraints){
-            switch(con){
-                case SQLITE_CONSTRAINT_NOTNULL:
-                arguments.append(" NOT NULL");
-                break;
-                case SQLITE_CONSTRAINT_PRIMARYKEY:
-                arguments.append(" PRIMARY KEY");
-                break;
-                default:
-                break;
-            }
-        }
-        arguments.append(", ");
-    }
-    arguments.erase(arguments.length()-1);
-    arguments.erase(arguments.length()-1);
-    std::cout << arguments;
-
-
-    std::string temp = "CREATE TABLE IF NOT EXISTS " + name + " (" + arguments + ");";
-
+    std::string temp = table.getCreateStatement();
     const char* add_table_stmnt = temp.c_str();
 
     sqlite3_stmt* ppStmt;
@@ -147,26 +190,32 @@ int Sqlitewrapper::createTable(std::string name, std::list<ColumnAttributes> col
         &pzTail
     );
     if(prepareReturnValue == SQLITE_OK){
-        std::cout << "Successfully prepared create " + name +"-table statement.\n";
+        std::cout << "Successfully prepared create " + table.name_ +"-table statement.\n";
 
         //execute & finalize statement
         stepReturnValue = sqlite3_step(ppStmt);
         if(stepReturnValue == SQLITE_DONE){
-                std::cout << "Successfully processed create table statement.\n";
-                finalizeReturnValue = sqlite3_finalize(ppStmt);
-                if(finalizeReturnValue == SQLITE_OK){
+            std::cout << "Successfully processed create table statement.\n";
+            finalizeReturnValue = sqlite3_finalize(ppStmt);
+            if(finalizeReturnValue == SQLITE_OK){
                 std::cout << "Successfully finalized create table statement.\n";
                 return SQLITE_OK;
-                }
-                else{
-                    return sqlite3_extended_errcode(*database_);
-                }
+            }
+            else{
+                std::cout << "Error finalising create statement\n";
+                std::cout << sqlite3_extended_errcode(*database_);
+                return sqlite3_extended_errcode(*database_);
+            }
         }
         else{
+            std::cout << "Error executing create table statement\n";
+            std::cout << stepReturnValue;
+            std::cout << sqlite3_extended_errcode(*database_);
             return sqlite3_extended_errcode(*database_);
         }
     }
     else{
+        std::cout << "Error preparing create table statement\n";
         return sqlite3_extended_errcode(*database_);
     }
 }
@@ -180,11 +229,10 @@ int Sqlitewrapper::createTable(std::string name, std::list<ColumnAttributes> col
     * return:               SQLITE_OK if successful
     *                       errorcode else
 */
+int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseTable table, Sqlitewrapper::DatabaseObject *databaseObject){
 
-
-int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObject){
-
-    std::string statementString = std::string(databaseObject->getInsertStatement());
+    //std::cout << table.getInsertStatement();
+    std::string statementString = table.getInsertStatement();
     const char* statementPointer = statementString.c_str();
 
     sqlite3_stmt* insertStmt;
@@ -214,7 +262,7 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObjec
 
     int bindReturnValue = SQLITE_OK;
 
-    auto layout = databaseObject->getLayout();
+    auto layout = table.layout_;
     auto data = databaseObject->getData();
     auto it = layout.begin();
     /* argumentCount keeps track of the position of the variable to be bound within the statement.
@@ -222,6 +270,7 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObjec
     */
     uint32_t argumentCount = 1;
     for(; it != layout.end(); it++, argumentCount++){
+        //std::cout << it->name << it->type << "\n";
         switch(it->type){
             case ColumnType::INT:
                 if(data[it->name.c_str()] != NULL){
@@ -286,7 +335,7 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObjec
 }
 
 /**
-    * Deletes a contact from the database by using a DELETE statement on the contact table. If a generic delete statement already exists it is rebound and used,
+    * Deletes a contact from the database by using a DELETE statement on the specified table. If a generic delete statement already exists it is rebound and used,
     * otherwise a new delete statement is prepared.
     * 
     * var databaseObject:  the databaseObject to be deleted
@@ -294,14 +343,15 @@ int Sqlitewrapper::addDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObjec
     * return:              SQLITE_OK if successful
     *                      errorcode else
     */
-int Sqlitewrapper::deleteDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseObject){
+int Sqlitewrapper::deleteDatabaseEntry(Sqlitewrapper::DatabaseTable table, Sqlitewrapper::DatabaseObject *databaseObject){
     
     if(databaseObject->getData()["id"] == NULL){
         std::cout << "trying to delete an object not present in the database\n";
         return -1;
     }
 
-    std::string deleteStatementString = std::string(databaseObject->getDeleteStatement());
+    //std::cout << table.getDeleteStatement();
+    std::string deleteStatementString = std::string(table.getDeleteStatement());
     const char* deleteStatementPointer = deleteStatementString.c_str();
     sqlite3_stmt* deleteStmt;
     
@@ -360,6 +410,7 @@ int Sqlitewrapper::deleteDatabaseEntry(Sqlitewrapper::DatabaseObject *databaseOb
     }
     else{
             std::cout << "Statement to delete could not be prepared.\n Error code " << sqlite3_extended_errcode(*database_) << ".\n";
+            std::cout << "Result code: " << bindReturnValue << "\n";
             return sqlite3_extended_errcode(*database_);
     }
 }

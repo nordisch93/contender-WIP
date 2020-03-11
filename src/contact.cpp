@@ -75,11 +75,11 @@ void Date::setDate(uint32_t day, uint32_t month, uint32_t year){
 };
 
 Contact::Contact(){ data_ = Json::Value();};
-Contact::Contact(Json::Value data){
+Contact::Contact(Sqlitewrapper::DatabaseTable table, Json::Value data){
     //contact data coming from the database
     if(data["fromDatabase"] == true){
         uint32_t count = 0;
-        for(auto i = layout_.begin(); i != layout_.end(); i++, count++){
+        for(auto i = table.layout_.begin(); i != table.layout_.end(); i++, count++){
             if(data[std::to_string(count)].isDouble()){
                 data_[i->name] = data[std::to_string(count)].asDouble();
                 //std::cout << i->name << " was changed to " << data[std::to_string(count)].asDouble() << "\n";
@@ -110,7 +110,8 @@ Contact::Contact(Json::Value data){
     else{
         data_ = data;
         data_["fromDatabase"] = false;
-        data_["id"] = NULL;
+        data_["contact_id"] = NULL;
+        databaseId_ = -1;
     }
 };
 Contact::Contact(std::list<std::string> firstNames, std::list<std::string> lastNames){
@@ -124,19 +125,14 @@ Contact::Contact(std::list<std::string> firstNames, std::list<std::string> lastN
             }
             return stringOfAllNames.append("]");
         };
-        data_["firstNames"] = flattenList(firstNames);
-        data_["lastNames"] = flattenList(lastNames);
-        data_["id"] = NULL;
-};
-
-std::string Contact::getInsertStatement(){
-    return "INSERT INTO contacts (contact_id, first_name, last_name, email, phone) VALUES (@contact_id, @first_name, @last_name, @email, @phone);";
-};
-std::string Contact::getDeleteStatement(){
-    return "DELETE FROM contacts WHERE contact_id = @contact_id;";
+        data_["first_name"] = flattenList(firstNames);
+        data_["last_name"] = flattenList(lastNames);
+        data_["contact_id"] = NULL;
+        data_["email"] = "";
+        data_["phone"] = "";
 };
 
 void Contact::printContact(){
-    std::cout << "First Name: " << (data_["firstNames"].empty() ? "empty" : std::string(data_["firstNames"].asCString())) << "\n";
-    std::cout << "Last Name: " << (data_["lastNames"].empty() ? "empty" : std::string(data_["lastNames"].asCString())) << "\n";
+    std::cout << "First Name: " << (data_["first_name"].empty() ? "empty" : std::string(data_["first_name"].asCString())) << "\n";
+    std::cout << "Last Name: " << (data_["last_name"].empty() ? "empty" : std::string(data_["last_name"].asCString())) << "\n";
 }

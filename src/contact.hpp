@@ -44,20 +44,13 @@ class Date{
 class Contact : public Sqlitewrapper::DatabaseObject{
 private:
     Json::Value data_;
-    inline static const std::list<Sqlitewrapper::ColumnAttributes> layout_ =
-        {Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::INT, "id"),
-        Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::TEXT, "firstNames"),
-        Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::TEXT, "lastNames") };
 public:
     Contact();
-    Contact(Json::Value);
+    Contact(Sqlitewrapper::DatabaseTable table, Json::Value);
     Contact(std::list<std::string> firstNames, std::list<std::string> lastNames);
     void printContact();
 
-    std::string getInsertStatement();
-    std::string getDeleteStatement();
     Json::Value getData(){return data_;}
-    std::list<Sqlitewrapper::ColumnAttributes> getLayout(){return layout_;}
 };
 
 #endif

@@ -53,14 +53,16 @@ int main(int argc, char* argv[]){
         attrList.push_back(Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::TEXT, std::string("email")));
         attrList.push_back(Sqlitewrapper::ColumnAttributes(Sqlitewrapper::ColumnType::TEXT, std::string("phone")));
 
-        int temp = sqlw.createTable(tableName, attrList);
+        Sqlitewrapper::DatabaseTable contactTable = Sqlitewrapper::DatabaseTable(std::string("contacts"), attrList);
+
+        int temp = sqlw.createTable(contactTable);
         
         if(temp == SQLITE_OK){
             for(Contact c : list){
-                temp = sqlw.addDatabaseEntry(&c);
+                temp = sqlw.addDatabaseEntry(contactTable, &c);
                 if(temp == SQLITE_OK){
                     //everything fine
-                    std::cout << "Added " << c.getData()["firstNames"] << " to the database.\n \n";
+                    std::cout << "Added " << c.getData()["first_name"] << " to the database.\n \n";
                 }
                 else{
                     //couldnt add contact
@@ -77,7 +79,7 @@ int main(int argc, char* argv[]){
         auto list2 = std::list<Contact>();
 
         for(Json::Value d : *destination){
-            Contact c = Contact(d);
+            Contact c = Contact(contactTable, d);
             list2.push_back(c);
         }
 
@@ -87,7 +89,7 @@ int main(int argc, char* argv[]){
         
         //delete an entry
         Contact d = list2.front();
-        sqlw.deleteDatabaseEntry(&d);
+        sqlw.deleteDatabaseEntry(contactTable, &d);
 
         //close database
         if(dbIsOpen){

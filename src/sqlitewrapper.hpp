@@ -62,6 +62,22 @@ public:
     };
 
     /**
+     * This Class is a representation of a single table within the database. It holds the layout in form of a list
+     * of columnAttributes, its own name and can be used to derive the database statements such as delete and insert.
+     * Every DatabaseObject needs to be constructed bound to a specific table.
+     */
+    class DatabaseTable{
+        public: DatabaseTable(std::string name, std::list<ColumnAttributes> layout): name_(name), layout_(layout){};
+        
+        const std::string name_;
+        const std::list<ColumnAttributes> layout_;
+
+        const std::string getInsertStatement();
+        const std::string getDeleteStatement();
+        const std::string getCreateStatement();
+    };
+
+    /**
      * This Interface defines the methods that any Class has to implement in order to store them in
      * the database via this sqlitewrapper.
      * A DatabaseObject needs the following:
@@ -72,12 +88,7 @@ public:
      */
     class DatabaseObject{
     public:
-        virtual ~DatabaseObject(){};
-        virtual std::string getInsertStatement() = 0;
-        virtual std::string getDeleteStatement() = 0;
-        
-        virtual std::list<ColumnAttributes> getLayout() = 0;
-        
+        virtual ~DatabaseObject(){};        
         virtual Json::Value getData() = 0;
         
         int databaseId_ = -1;
@@ -133,30 +144,30 @@ public:
      * return:          SQLITE_OK if successful
      *                  extended errorcode else
      */
-    int createTable(std::string name, std::list<ColumnAttributes> columns);
+    int createTable(DatabaseTable table);
 
 
     /**
      * Adds a DatabaseObject to the database by using an INSERT INTO statement on the specified table.
      *
      * var databaseObject:  the object to be added
-     * var tableName:       the name of the table where the object is to be added
+     * var table:           the table where the object is to be added
      *
      * return:          SQLITE_OK if successful
      *                  errorcode else
      */
-    int addDatabaseEntry(DatabaseObject* databaseObject);
+    int addDatabaseEntry(DatabaseTable table, DatabaseObject* databaseObject);
 
     /**
      * Deletes a contact from the database by using a DELETE statement on the contact table.
      *
-     * var entryId:     the ID of the contact to be deleted
-     * var tableName:   the name of the table the entry is to be deelted from
+     * var databaseObject:     the object deleted
+     * var table:              the table the entry is to be deleted from
      *
      * return:          SQLITE_OK if successful
      *                  errorcode else
      */
-    int deleteDatabaseEntry(DatabaseObject* databaseObject);
+    int deleteDatabaseEntry(DatabaseTable table, DatabaseObject* databaseObject);
 
     /**
      * Carries out a Select operation on the database and writes a list of all retreived db-entries to
