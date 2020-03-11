@@ -130,6 +130,9 @@ Contact::Contact(std::list<std::string> firstNames, std::list<std::string> lastN
 };
 
 void Contact::printContact(){
+    std::cout << "Contact Id: " << (data_["contact_id"].empty() ? -1 : data_["contact_id"].asInt()) << "\n";
     std::cout << "First Name: " << (data_["first_name"].empty() ? "empty" : std::string(data_["first_name"].asCString())) << "\n";
     std::cout << "Last Name: " << (data_["last_name"].empty() ? "empty" : std::string(data_["last_name"].asCString())) << "\n";
+    std::cout << "Phone: " << (data_["phone"].empty() ? "empty" : std::string(data_["phone"].asCString())) << "\n";
+    std::cout << "Email: " << (data_["email"].empty() ? "empty" : std::string(data_["email"].asCString())) << "\n";
 }
